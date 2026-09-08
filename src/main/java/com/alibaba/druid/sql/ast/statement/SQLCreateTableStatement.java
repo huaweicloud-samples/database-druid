@@ -74,6 +74,44 @@ public class SQLCreateTableStatement extends SQLStatementImpl implements SQLDDLS
     protected boolean                          dimension;
     protected SQLExpr                          engine;
 
+    // for gaussdb: UNLOGGED / GLOBAL TEMPORARY / LOCAL TEMPORARY
+    protected long                             features = 0;
+
+    public void config(Feature feature) {
+        this.features = feature.config(this.features, true);
+    }
+
+    public boolean isEnabled(Feature feature) {
+        return feature.isEnabled(this.features);
+    }
+
+    public enum Feature {
+        Temporary(1),
+        Global(1 << 1),
+        Local(1 << 2),
+        Unlogged(1 << 12);
+
+        public final int mask;
+
+        Feature(int mask) {
+            this.mask = mask;
+        }
+
+        public boolean isEnabled(long features) {
+            return (features & mask) != 0;
+        }
+
+        public long config(long features, boolean state) {
+            if (state) {
+                features |= this.mask;
+            } else {
+                features &= ~this.mask;
+            }
+
+            return features;
+        }
+    }
+
     public SQLCreateTableStatement(){
 
     }

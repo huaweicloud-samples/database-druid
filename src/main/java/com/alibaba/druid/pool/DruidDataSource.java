@@ -1324,6 +1324,8 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
                 || realDriverClassName.equals(JdbcConstants.ENTERPRISEDB_DRIVER)
                 || realDriverClassName.equals(JdbcConstants.POLARDB_DRIVER)) {
             this.validConnectionChecker = new PGValidConnectionChecker();
+        } else if (realDriverClassName.equals(JdbcConstants.GAUSSDB_DRIVER)) {
+            this.validConnectionChecker = new GaussDBValidConnectionChecker();
         }
     }
 
@@ -1362,6 +1364,8 @@ public class DruidDataSource extends DruidAbstractDataSource implements DruidDat
                     || realDriverClassName.equals(JdbcConstants.ENTERPRISEDB_DRIVER)
                     || realDriverClassName.equals(JdbcConstants.POLARDB_DRIVER)) {
                 this.exceptionSorter = new PGExceptionSorter();
+            } else if (realDriverClassName.equals(JdbcConstants.GAUSSDB_DRIVER)) {
+                this.exceptionSorter = new GaussDBExceptionSorter();
 
             } else if (realDriverClassName.equals("com.alibaba.druid.mock.MockDriver")) {
                 this.exceptionSorter = new MockExceptionSorter();

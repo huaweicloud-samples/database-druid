@@ -50,7 +50,8 @@ public class SQLPartitionValue extends OracleSegmentAttributesImpl {
     public static enum Operator {
                                  LessThan, //
                                  In, //
-                                 List
+                                 List, //
+                                 StartEndEvery
     }
 
     @Override

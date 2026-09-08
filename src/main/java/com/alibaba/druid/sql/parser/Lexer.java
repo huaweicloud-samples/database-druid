@@ -299,6 +299,30 @@ public class Lexer {
         this.token = token;
     }
 
+    public boolean nextIf(Token token) {
+        if (this.token == token) {
+            nextToken();
+            return true;
+        }
+        return false;
+    }
+
+    public final boolean nextIfIdentifier(String identifier) {
+        if (this.identifierEquals(identifier)) {
+            nextToken();
+            return true;
+        }
+        return false;
+    }
+
+    public final boolean nextIfIdentifier(long hashCode54) {
+        if (this.identifierEquals(hashCode54)) {
+            nextToken();
+            return true;
+        }
+        return false;
+    }
+
     public final DbType getDbType() {
         return this.dbType;
     }

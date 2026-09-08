@@ -168,6 +168,13 @@ public class WallFilter extends FilterAdapter implements WallFilterMBean {
 
                 provider = new PGWallProvider(config);
                 break;
+            case gaussdb:
+                if (config == null) {
+                    config = new WallConfig(GaussDBWallProvider.DEFAULT_CONFIG_DIR);
+                }
+
+                provider = new GaussDBWallProvider(config);
+                break;
             case db2:
                 if (config == null) {
                     config = new WallConfig(DB2WallProvider.DEFAULT_CONFIG_DIR);

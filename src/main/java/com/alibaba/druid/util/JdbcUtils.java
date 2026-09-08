@@ -437,6 +437,8 @@ public final class JdbcUtils implements JdbcConstants {
             return "com.alibaba.druid.mock.MockDriver";
         } else if (rawUrl.startsWith("jdbc:postgresql:")) {
             return POSTGRESQL_DRIVER;
+        } else if (rawUrl.startsWith("jdbc:gaussdb:")) {
+            return GAUSSDB_DRIVER;
         } else if (rawUrl.startsWith("jdbc:edb:")) {
             return ENTERPRISEDB_DRIVER;
         } else if (rawUrl.startsWith("jdbc:odps:")) {
@@ -560,6 +562,8 @@ public final class JdbcUtils implements JdbcConstants {
             return DbType.mock;
         } else if (rawUrl.startsWith("jdbc:postgresql:") || rawUrl.startsWith("jdbc:log4jdbc:postgresql:")) {
             return DbType.postgresql;
+        } else if (rawUrl.startsWith("jdbc:gaussdb:") || rawUrl.startsWith("jdbc:opengauss:")) {
+            return DbType.gaussdb;
         } else if (rawUrl.startsWith("jdbc:edb:")) {
             return DbType.edb;
         } else if (rawUrl.startsWith("jdbc:hsqldb:") || rawUrl.startsWith("jdbc:log4jdbc:hsqldb:")) {
@@ -888,6 +892,9 @@ public final class JdbcUtils implements JdbcConstants {
 
         if (dbType == DbType.postgresql) {
             return PGUtils.showTables(conn);
+        }
+        if (dbType == DbType.gaussdb) {
+            return GaussDBUtils.showTables(conn);
         }
         throw new SQLException("show tables dbType not support for " + dbType);
     }

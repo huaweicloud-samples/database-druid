@@ -34,6 +34,9 @@ public interface JdbcConstants {
     DbType POSTGRESQL                 = DbType.postgresql;
     String POSTGRESQL_DRIVER          = "org.postgresql.Driver";
 
+    DbType GAUSSDB                    = DbType.gaussdb;
+    String GAUSSDB_DRIVER             = "com.huawei.gaussdb.jdbc.Driver";
+
     DbType SYBASE                     = DbType.sybase;
 
     DbType SQL_SERVER                 = DbType.sqlserver;

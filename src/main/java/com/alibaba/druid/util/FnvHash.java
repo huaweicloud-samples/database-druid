@@ -977,6 +977,10 @@ public final class FnvHash {
         long DISTRIBUTE = fnv1a_64_lower("DISTRIBUTE");
         long DISTRIBUTED = fnv1a_64_lower("DISTRIBUTED");
         long CLUSTER = fnv1a_64_lower("CLUSTER");
+        long COMPRESS_MODE = fnv1a_64_lower("COMPRESS_MODE");
+        long DATANODE = fnv1a_64_lower("DATANODE");
+        long ROUNDROBIN = fnv1a_64_lower("ROUNDROBIN");
+        long REPLICATION = fnv1a_64_lower("REPLICATION");
         long RUNNING = fnv1a_64_lower("RUNNING");
         long CLUSTERING = fnv1a_64_lower("CLUSTERING");
         long PCTVERSION = fnv1a_64_lower("PCTVERSION");

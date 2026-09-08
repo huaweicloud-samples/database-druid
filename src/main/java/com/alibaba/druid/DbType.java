@@ -48,6 +48,11 @@ public enum DbType {
     sybase          (1 << 35),
     highgo          (1 << 36),
 
+    /**
+     * 华为的mpp数据库
+     */
+    gaussdb(1L << 38),
+
 
     ingres          (0),
     cloudscape          (0),

@@ -25,6 +25,7 @@ import com.alibaba.druid.sql.dialect.antspark.visitor.AntsparkSchemaStatVisitor;
 import com.alibaba.druid.sql.dialect.blink.vsitor.BlinkOutputVisitor;
 import com.alibaba.druid.sql.dialect.clickhouse.visitor.ClickhouseOutputVisitor;
 import com.alibaba.druid.sql.dialect.db2.visitor.DB2OutputVisitor;
+import com.alibaba.druid.sql.dialect.gaussdb.visitor.GaussDbOutputVisitor;
 import com.alibaba.druid.sql.dialect.db2.visitor.DB2SchemaStatVisitor;
 import com.alibaba.druid.sql.dialect.h2.visitor.H2OutputVisitor;
 import com.alibaba.druid.sql.dialect.h2.visitor.H2SchemaStatVisitor;
@@ -479,6 +480,8 @@ public class SQLUtils {
                 return new MySqlOutputVisitor(out);
             case postgresql:
                 return new PGOutputVisitor(out);
+            case gaussdb:
+                return new GaussDbOutputVisitor(out);
             case sqlserver:
             case jtds:
                 return new SQLServerOutputVisitor(out);

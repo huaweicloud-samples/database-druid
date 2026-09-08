@@ -549,6 +549,13 @@
 			<artifactId>hive-jdbc</artifactId>
 			<version>3.1.2</version>
 			<scope>provided</scope>
+			<exclusions>
+				<!-- JDK 9+ 无 tools.jar，hadoop-annotations 的 system 依赖无法解析 -->
+				<exclusion>
+					<groupId>jdk.tools</groupId>
+					<artifactId>jdk.tools</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>ru.yandex.clickhouse</groupId>
@@ -572,6 +579,21 @@
 			<artifactId>odps-jdbc</artifactId>
 			<version>1.6</version>
 			<scope>test</scope>
+			<exclusions>
+				<!-- JDK 9+ 无 tools.jar，system 依赖无法解析 -->
+				<exclusion>
+					<groupId>jdk.tools</groupId>
+					<artifactId>jdk.tools</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>com.huaweicloud.gaussdb</groupId>
+			<artifactId>gaussdbjdbc</artifactId>
+			<!-- 505.2.1.spc800 / 507.0.0.B071 等驱动请自行装仓后替换本版本号（见 USAGE.md 第二节） -->
+			<version>506.0.0.b058</version>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>

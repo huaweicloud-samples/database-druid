@@ -279,6 +279,10 @@ public enum Token {
     SORT,
     LATERAL,
 
+    // gaussdb
+    LOCAL("LOCAL"),
+    PARTIAL("PARTIAL"),
+
     // Teradata
     SEL("SEL"),
     LOCKING("LOCKING"),

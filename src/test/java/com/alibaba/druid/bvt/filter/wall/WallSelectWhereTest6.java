@@ -26,9 +26,8 @@ import com.alibaba.druid.wall.WallUtils;
  * @author wenshao
  */
 public class WallSelectWhereTest6 extends TestCase {
-
     private String sql = "SELECT * FROM T WHERE id = 0 or 1 = 1 --";
-    
+
     private String sql1 = "SELECT * FROM T WHERE id = 0 or 1 = 1 #and c=1";
 
     public void test_check_true() throws Exception {
@@ -39,6 +38,9 @@ public class WallSelectWhereTest6 extends TestCase {
 
         Assert.assertFalse(WallUtils.isValidateMySql(sql, config));
         Assert.assertFalse(WallUtils.isValidateMySql(sql1, config));
+
+        config.setSelectWhereAlwayTrueCheck(false);
+        Assert.assertTrue(WallUtils.isValidateMySql(sql, config));
     }
 
     public void test_check_false() throws Exception {
@@ -50,7 +52,6 @@ public class WallSelectWhereTest6 extends TestCase {
         Assert.assertTrue(WallUtils.isValidateMySql(sql, config));
         Assert.assertTrue(WallUtils.isValidateMySql(sql1, config));
     }
-    
-    
-    
+
+
 }

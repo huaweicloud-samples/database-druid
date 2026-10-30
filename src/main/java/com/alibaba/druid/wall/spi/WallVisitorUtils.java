@@ -31,6 +31,7 @@ import com.alibaba.druid.sql.dialect.sqlserver.ast.stmt.SQLServerExecStatement;
 import com.alibaba.druid.sql.dialect.sqlserver.ast.stmt.SQLServerInsertStatement;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.ExportParameterVisitor;
+import com.alibaba.druid.sql.visitor.SQLASTVisitorAdapter;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitor;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.sql.visitor.functions.Nil;
@@ -221,16 +222,71 @@ public class WallVisitorUtils {
 
             Object whereValue = getConditionValue(visitor, where, visitor.getConfig().isSelectWhereAlwayTrueCheck());
 
-            if (Boolean.TRUE == whereValue) {
+            if (Boolean.TRUE.equals(whereValue)) {
                 if (visitor.getConfig().isSelectWhereAlwayTrueCheck()
                         && visitor.isSqlEndOfComment()
-                        && !isSimpleConstExpr(where)) {// 简单表达式
+                        && isSimpleConstExpr(where)) {// 简单表达式
                     addViolation(visitor, ErrorCode.ALWAYS_TRUE, "select alway true condition not allow", x);
                 }
+            } else if (Boolean.FALSE.equals(whereValue)
+                    && visitor.getDbType() == DbType.gaussdb
+                    && visitor.getConfig().isSelectWhereAlwayTrueCheck()
+                    && visitor.isSqlEndOfComment()
+                    && isSimpleConstExpr(where)) {
+                addViolation(visitor, ErrorCode.ALWAYS_FALSE, "select alway false condition not allow", x);
             }
+
+            checkWhereSubQuery(visitor, where);
         }
         checkSelectForMultiTenant(visitor, x);
         // checkConditionForMultiTenant(visitor, x.getWhere(), x);
+    }
+
+    /**
+     * selectWhereSubQueryCheck 开启时, WHERE 子句中出现 IN/EXISTS/SOME/ALL 子查询视为注入特征。
+     * 该检查默认关闭, 仅 GaussDBWallProvider 默认配置开启。
+     */
+    private static void checkWhereSubQuery(WallVisitor visitor, SQLExpr where) {
+        if (!visitor.getConfig().isSelectWhereSubQueryCheck()) {
+            return;
+        }
+
+        final boolean[] hasSubQuery = new boolean[1];
+        where.accept(new SQLASTVisitorAdapter() {
+            public boolean visit(SQLInSubQueryExpr x) {
+                hasSubQuery[0] = true;
+                return false;
+            }
+
+            public boolean visit(SQLExistsExpr x) {
+                hasSubQuery[0] = true;
+                return false;
+            }
+
+            public boolean visit(SQLQueryExpr x) {
+                hasSubQuery[0] = true;
+                return false;
+            }
+
+            public boolean visit(SQLAllExpr x) {
+                hasSubQuery[0] = true;
+                return false;
+            }
+
+            public boolean visit(SQLSomeExpr x) {
+                hasSubQuery[0] = true;
+                return false;
+            }
+
+            public boolean visit(SQLAnyExpr x) {
+                hasSubQuery[0] = true;
+                return false;
+            }
+        });
+
+        if (hasSubQuery[0]) {
+            addViolation(visitor, ErrorCode.SELECT_WHERE_SUB_QUERY, "select where sub query not allow", where);
+        }
     }
 
     public static void checkHaving(WallVisitor visitor, SQLExpr x) {
@@ -238,10 +294,10 @@ public class WallVisitorUtils {
             return;
         }
 
-        if (Boolean.TRUE == getConditionValue(visitor, x, visitor.getConfig().isSelectHavingAlwayTrueCheck())) {
+        if (Boolean.TRUE.equals(getConditionValue(visitor, x, visitor.getConfig().isSelectHavingAlwayTrueCheck()))) {
             if (visitor.getConfig().isSelectHavingAlwayTrueCheck()
                     && visitor.isSqlEndOfComment()
-                    && !isSimpleConstExpr(x)) {
+                    && isSimpleConstExpr(x)) {
                 addViolation(visitor, ErrorCode.ALWAYS_TRUE, "having alway true condition not allow", x);
             }
         }
@@ -280,7 +336,7 @@ public class WallVisitorUtils {
             checkCondition(visitor, where);
 
             if (Boolean.TRUE == getConditionValue(visitor, where, config.isDeleteWhereAlwayTrueCheck())) {
-                if (config.isDeleteWhereAlwayTrueCheck() && visitor.isSqlEndOfComment() && !isSimpleConstExpr(where)) {
+                if (config.isDeleteWhereAlwayTrueCheck() && visitor.isSqlEndOfComment() && isSimpleConstExpr(where)) {
                     addViolation(visitor, ErrorCode.ALWAYS_TRUE, "delete alway true condition not allow", x);
                 }
             }
@@ -323,18 +379,15 @@ public class WallVisitorUtils {
                 if (binaryOpExpr.getOperator() == SQLBinaryOperator.Equality
                         || binaryOpExpr.getOperator() == SQLBinaryOperator.NotEqual
                         || binaryOpExpr.getOperator() == SQLBinaryOperator.GreaterThan) {
-                    if (binaryOpExpr.getLeft() instanceof SQLIntegerExpr
-                            && binaryOpExpr.getRight() instanceof SQLIntegerExpr) {
                         isSimpleConstExpr = true;
-                    }
                 }
             }
 
-            if (!isSimpleConstExpr) {
-                return false;
+            if (isSimpleConstExpr) {
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     private static void checkCondition(WallVisitor visitor, SQLExpr x) {
@@ -872,7 +925,7 @@ public class WallVisitorUtils {
             checkCondition(visitor, where);
 
             if (Boolean.TRUE == getConditionValue(visitor, where, config.isUpdateWhereAlayTrueCheck())) {
-                if (config.isUpdateWhereAlayTrueCheck() && visitor.isSqlEndOfComment()&& !isSimpleConstExpr(where)) {
+                if (config.isUpdateWhereAlayTrueCheck() && visitor.isSqlEndOfComment() && isSimpleConstExpr(where)) {
                     addViolation(visitor, ErrorCode.ALWAYS_TRUE, "update alway true condition not allow", x);
                 }
             }
@@ -1079,7 +1132,7 @@ public class WallVisitorUtils {
     }
 
     private static Object getValue_or(WallVisitor visitor, List<SQLExpr> groupList) {
-        boolean allFalse = true;
+        int falseCount = 0;
         for (int i = groupList.size() - 1; i >= 0; --i) {
             SQLExpr item = groupList.get(i);
             Object result = getValue(visitor, item);
@@ -1092,13 +1145,12 @@ public class WallVisitorUtils {
                 return true;
             }
 
-            if (booleanVal == null) {
-                allFalse = false;
-                break;
+            if (Boolean.FALSE.equals(booleanVal)) {
+                falseCount++;
             }
         }
 
-        if (allFalse) {
+        if (falseCount == groupList.size()) {
             return false;
         }
 
@@ -1871,7 +1923,15 @@ public class WallVisitorUtils {
             owner = WallVisitorUtils.form(owner);
             if (isInTableSource(x) && !visitor.getProvider().checkDenySchema(owner)) {
 
-                if (!isTopStatementWithTableSource(x) && !isFirstSelectTableSource(x) && !isFirstInSubQuery(x)) {
+                // gaussdb 强化: FROM 子查询内的 deny schema 不随首表豁免放行
+                boolean firstSelectExempt = isFirstSelectTableSource(x);
+                if (firstSelectExempt
+                        && visitor.getDbType() == DbType.gaussdb
+                        && isInSubqueryTableSource(x)) {
+                    firstSelectExempt = false;
+                }
+
+                if (!isTopStatementWithTableSource(x) && !firstSelectExempt && !isFirstInSubQuery(x)) {
                     SQLObject parent = x.getParent();
                     while (parent != null && !(parent instanceof SQLStatement)) {
                         parent = parent.getParent();
@@ -2076,6 +2136,15 @@ public class WallVisitorUtils {
         return false;
     }
 
+    private static boolean isInSubqueryTableSource(SQLObject x) {
+        for (SQLObject parent = x.getParent(); parent != null; parent = parent.getParent()) {
+            if (parent instanceof SQLSubqueryTableSource) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static boolean hasTableSource(SQLTableSource x) {
         if (x == null) {
             return false;
@@ -2221,7 +2290,15 @@ public class WallVisitorUtils {
             if (visitor.isDenyTable(tableName)
                     && !(topStatementContext != null && topStatementContext.fromPermitTable())) {
 
-                if (isTopStatementWithTableSource(x) || isFirstSelectTableSource(x)) {
+                // gaussdb 强化: 顶层 FROM 豁免保留, FROM 子查询内的 deny 表不再豁免
+                boolean exempt = isTopStatementWithTableSource(x) || isFirstSelectTableSource(x);
+                if (exempt
+                        && visitor.getDbType() == DbType.gaussdb
+                        && isInSubqueryTableSource(x)) {
+                    exempt = false;
+                }
+
+                if (exempt) {
                     if (topStatementContext != null) {
                         topStatementContext.setFromSysTable(Boolean.TRUE);
                         clearViolation(visitor);
@@ -2260,6 +2337,15 @@ public class WallVisitorUtils {
     }
 
     public static boolean checkUnion(WallVisitor visitor, SQLUnionQuery x) {
+        // gaussdb: UNION/UNION ALL 视为 union 注入特征(selectUnionCheck 开关控制, 默认开启)
+        if (visitor.getDbType() == DbType.gaussdb
+                && visitor.getConfig().isSelectUnionCheck()
+                && (x.getOperator() == SQLUnionOperator.UNION
+                    || x.getOperator() == SQLUnionOperator.UNION_ALL)) {
+            addViolation(visitor, ErrorCode.UNION, x.getOperator().toString() + " query not allow", x);
+            return true;
+        }
+
         if (x.getRelations().size() > 2) {
             for (int i = 0; i < x.getRelations().size(); i++) {
                 SQLSelectQuery item = x.getRelations().get(i);

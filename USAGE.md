@@ -103,7 +103,9 @@ wallFilter.setThrowException(false);   // 不拦截，观察期
 
 | 开关 | 默认 | 说明 |
 |---|---|---|
-| `setSelectWhereAlwayTrueCheck(true)` | true | WHERE 恒真条件拦截 |
+| `setSelectWhereAlwayTrueCheck(true)` | true | WHERE 恒真条件拦截（`WHERE 1=1`）；gaussdb 下恒假（`WHERE 1=2`）同样拦截 |
+| `setSelectWhereSubQueryCheck(false)` | gaussdb 默认开 | WHERE 子查询拦截（`WHERE id IN (SELECT ...)`，含 EXISTS/ANY/ALL/SOME）；仅 GaussDBWallProvider 无参构造默认开启，其他方言默认关闭 |
+| `setSelectUnionCheck(true)` | true | UNION 拦截；gaussdb 下 UNION / UNION ALL 均拦截（其他方言仅拦无 FROM 的右侧分支） |
 | `setDeleteAllow(false)` | true | 禁 DELETE |
 | `setTruncateAllow(false)` | true | 禁 TRUNCATE |
 | `setMultiStatementAllow(false)` | false | 禁多语句 |
@@ -111,6 +113,15 @@ wallFilter.setThrowException(false);   // 不拦截，观察期
 | `setSelectLimit(n)` | -1 | 强制 LIMIT 上限 |
 
 系统属性方式：`-Ddruid.wall.deleteAllow=false` 等（WallConfig.configFromProperties）。
+
+### 2026-10 FVT 整改新增语义（gaussdb 专属）
+
+- **deny-table / deny-schema 子查询 FROM 拦截**：`SELECT * FROM (SELECT * FROM pg_database) t` 拦截；顶层 `from pg_database` 仍豁免（与上游统一语义一致）
+- **deny-schema 默认黑名单**：`META-INF/druid/wall/gaussdb/deny-schema.txt`（information_schema）
+- **恒假条件**：`WHERE 1=2`（ErrorCode 2113）
+- **WHERE 子查询**：见上表开关
+- **空 SQL / 纯注释 SQL**：`GaussDBWallProvider.checkValid` 直接拒绝（返回 false）
+- 以上增强仅作用于 gaussdb；其他方言（mysql/oracle/pg 等）行为与官方一致
 
 ### 黑名单文件（deny-function / deny-table）
 
@@ -164,7 +175,7 @@ mvn test -Dtest="com.alibaba.druid.bvt.sql.postgresql.**.*Test"
 
 1. **wall 黑名单的上下文触发边界**（上游 1.2.5～1.2.25 统一语义，非本改造缺陷）：
    - deny-function 仅在 **WHERE/HAVING/ORDER BY/GROUP BY** 上下文触发，SELECT 列表中的 `select pg_sleep(1)` 不拦；
-   - deny-table 仅在**子查询 FROM** 触发，顶层 `from pg_database`、`update/delete pg_database` 不拦；
+   - deny-table 顶层 `from pg_database`、`update/delete pg_database` 不拦；**gaussdb 下子查询 FROM 已拦截**（2026-10 整改，见第五节）；其他方言子查询 FROM 仍不拦（上游语义）；
    - 核心表防护请叠加**数据库侧权限控制**，wall 黑名单是作用域有限的深度防御层；无边界拦截需求用自定义 Filter。
 2. **`CONNECT BY` + `LIMIT` 同语句**：wall 校验正常，但 `toSQLString` 输出子句顺序再解析会失败（仅影响 StatFilter mergeSql 展示，不影响拦截判定）。业务罕见，如有此形态反馈后修复输出顺序。
 3. **单机实例不支持 DISTRIBUTE BY 执行**：`pgxc_node_name=gs_single` 的实例执行分布式 DDL 报 "distributed capability is not supported" 属预期（wall 解析不受影响）。本地 docker gaussdb-dist 实测为单机形态；客户分布式实例可实际执行。
@@ -182,6 +193,11 @@ mvn test -Dtest="com.alibaba.druid.bvt.sql.postgresql.**.*Test"
 **修改**（增量式）：pom.xml（驱动依赖 + jdk.tools exclusions）、DbType、Token、Lexer、FnvHash、SQLPartitionValue、SQLCreateTableStatement、WallFilter、WallUtils、SQLParserUtils、SQLUtils、JdbcUtils、JdbcConstants、DruidDataSource、DruidXADataSource
 
 **测试新增**：GaussDBWallTest / GaussDBDenyFunctionTest / GaussDBUpsertTest / GaussDBOracleCompatWallTest / GaussDbResourceTest（+6 资源文件）/ GaussDBIntegrationTest / SQLResourceTest 基类
+
+**2026-10 FVT 整改**（29 个失败检查项清零，详见 `tasks/todo.md`）：
+- 主代码：WallProvider（isEOF）、WallVisitorUtils（恒真 4 处条件翻转 + getValue_or + isSimpleConstExpr 升级 + gaussdb 子查询 FROM 豁免撤销 + checkUnion gaussdb 分支 + checkWhereSubQuery + 恒假分支）、WallConfig/WallConfigMBean（selectWhereSubQueryCheck 开关）、ErrorCode（SELECT_WHERE_SUB_QUERY=2114）、PGWallVisitor/SQLServerWallVisitor（补 visit，上游 2767ece28）、GaussDBWallProvider（checkValid 空 SQL 拒绝 + 默认开 subquery 检查）
+- 资源：`META-INF/druid/wall/gaussdb/deny-schema.txt`（information_schema）
+- 测试：WallStatTestWhereAlwaysTrue（移植+gaussdb 用例）、GaussDBWallDenyTableTest / GaussDBWallInjectionTest / GaussDBWallSqlParseTest / GaussDBWallSubQueryCheckTest（FVT 等价回归 26 项）+ 40 个存量断言类同步上游新版（MySqlWallTest91.test_true4 保留 1.2.5 断言）
 
 ---
 

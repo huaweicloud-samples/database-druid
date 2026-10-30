@@ -34,11 +34,47 @@ public class GaussDBWallProvider extends WallProvider {
     public static final String DEFAULT_CONFIG_DIR = "META-INF/druid/wall/gaussdb";
 
     public GaussDBWallProvider() {
-        this(new WallConfig(DEFAULT_CONFIG_DIR));
+        this(newDefaultConfig());
+    }
+
+    private static WallConfig newDefaultConfig() {
+        WallConfig config = new WallConfig(DEFAULT_CONFIG_DIR);
+        // gaussdb 默认强化: WHERE 子句中的子查询视为注入特征, 可通过 config.setSelectWhereSubQueryCheck(false) 关闭
+        config.setSelectWhereSubQueryCheck(true);
+        return config;
     }
 
     public GaussDBWallProvider(WallConfig config) {
         super(config, DbType.gaussdb);
+    }
+
+    /**
+     * 空 SQL / 纯注释 SQL 不含可校验语句, 直接拒绝, 避免默认放行
+     */
+    @Override
+    public boolean checkValid(String sql) {
+        if (isBlankOrCommentOnly(sql)) {
+            return false;
+        }
+        return super.checkValid(sql);
+    }
+
+    private static boolean isBlankOrCommentOnly(String sql) {
+        if (sql == null) {
+            return true;
+        }
+
+        String trimmed = sql.trim();
+        if (trimmed.isEmpty()) {
+            return true;
+        }
+
+        if (trimmed.startsWith("--") || trimmed.startsWith("/*")) {
+            String stripped = trimmed.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("(?m)--.*$", " ");
+            return stripped.trim().isEmpty();
+        }
+
+        return false;
     }
 
     @Override

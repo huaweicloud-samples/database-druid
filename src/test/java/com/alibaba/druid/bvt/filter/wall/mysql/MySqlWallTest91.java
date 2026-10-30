@@ -30,7 +30,6 @@ import org.junit.Assert;
  * @see
  */
 public class MySqlWallTest91 extends TestCase {
-
     private WallProvider initWallProvider() {
         WallProvider provider = new MySqlWallProvider();
 
@@ -188,6 +187,7 @@ public class MySqlWallTest91 extends TestCase {
         WallProvider provider = initWallProvider();
         {
             String sql = "SELECT 10006, @";
+            // 上游 5a1a5f0f3(parser 层 SQLAliasedExpr 修复)后才拦截, 1.2.5 parser 未移植该修复, 保持放行
             Assert.assertTrue(provider.checkValid(sql));
         }
     }
@@ -243,19 +243,19 @@ public class MySqlWallTest91 extends TestCase {
         WallProvider provider = initWallProvider();
         {
             String sql = "SELECT * FROM `oammxncom2014`.`ecs_free_bank` where 1 and 1='1'";
-            Assert.assertTrue(provider.checkValid(sql));
+            Assert.assertFalse(provider.checkValid(sql));
         }
         {
             String sql = "SELECT * FROM `oammxncom2014`.`ecs_free_bank` where 1 or 1='1'";
-            Assert.assertTrue(provider.checkValid(sql));
+            Assert.assertFalse(provider.checkValid(sql));
         }
         {
             String sql = "SELECT * FROM `oammxncom2014`.`ecs_free_bank` where true or 1='1'";
-            Assert.assertTrue(provider.checkValid(sql));
+            Assert.assertFalse(provider.checkValid(sql));
         }
         {
             String sql = "SELECT * FROM `oammxncom2014`.`ecs_free_bank` where 'a' or 1='1'";
-            Assert.assertTrue(provider.checkValid(sql));
+            Assert.assertFalse(provider.checkValid(sql));
         }
         {
             String sql = "SELECT * FROM `oammxncom2014`.`ecs_free_bank` where id=1 or 1='1' --";

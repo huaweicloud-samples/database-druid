@@ -40,6 +40,7 @@ public class WallConfig implements WallConfigMBean {
     private boolean             selectWhereAlwayTrueCheck   = true;
     private boolean             selectHavingAlwayTrueCheck  = true;
     private boolean             selectUnionCheck            = true;
+    private boolean             selectWhereSubQueryCheck    = false;
     private boolean             selectMinusCheck            = true;
     private boolean             selectExceptCheck           = true;
     private boolean             selectIntersectCheck        = true;
@@ -52,7 +53,7 @@ public class WallConfig implements WallConfigMBean {
     private boolean             startTransactionAllow       = true;
     private boolean             blockAllow                  = true;
 
-    private boolean             conditionAndAlwayTrueAllow  = false;
+    private boolean             conditionAndAlwayTrueAllow  = true;
     private boolean             conditionAndAlwayFalseAllow = false;
     private boolean             conditionDoubleConstAllow   = false;
     private boolean             conditionLikeTrueAllow      = true;
@@ -405,6 +406,14 @@ public class WallConfig implements WallConfigMBean {
 
     public void setRenameTableAllow(boolean renameTableAllow) {
         this.renameTableAllow = renameTableAllow;
+    }
+
+    public boolean isSelectWhereSubQueryCheck() {
+        return selectWhereSubQueryCheck;
+    }
+
+    public void setSelectWhereSubQueryCheck(boolean selectWhereSubQueryCheck) {
+        this.selectWhereSubQueryCheck = selectWhereSubQueryCheck;
     }
 
     public boolean isSelectUnionCheck() {

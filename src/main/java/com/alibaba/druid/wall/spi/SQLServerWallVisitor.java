@@ -18,8 +18,10 @@ package com.alibaba.druid.wall.spi;
 import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.sqlserver.ast.SQLServerSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.sqlserver.ast.expr.SQLServerObjectReferenceExpr;
 import com.alibaba.druid.sql.dialect.sqlserver.ast.stmt.SQLServerExecStatement;
+import com.alibaba.druid.sql.dialect.sqlserver.ast.stmt.SQLServerUpdateStatement;
 import com.alibaba.druid.sql.dialect.sqlserver.visitor.SQLServerASTVisitor;
 import com.alibaba.druid.wall.*;
 import com.alibaba.druid.wall.spi.WallVisitorUtils.WallTopStatementContext;
@@ -112,5 +114,15 @@ public class SQLServerWallVisitor extends WallVisitorBase implements WallVisitor
     @Override
     public boolean visit(SQLServerObjectReferenceExpr x) {
         return false;
+    }
+
+    public boolean visit(SQLServerSelectQueryBlock x) {
+        WallVisitorUtils.checkSelelct(this, x);
+        return true;
+    }
+
+    @Override
+    public boolean visit(SQLServerUpdateStatement x) {
+        return visit((SQLUpdateStatement) x);
     }
 }

@@ -24,22 +24,36 @@ import com.alibaba.druid.wall.WallUtils;
 
 /**
  * 这个场景，被攻击者用于测试当前SQL拥有多少字段
- * 
+ *
  * @author wenshao
  */
 public class WallUnionTest extends TestCase {
+    private static final String UNION_SQL1 = "select f1, f2 from t where f1=1 union select 1, 2";
+    private static final String UNION_SQL2 = "select f1, f2 from t where f1=1 union select 1, 2 --";
 
     public void testMySql() throws Exception {
         WallConfig config = new WallConfig();
+        config.setSelectUnionCheck(false);
+        config.setCommentAllow(true);
+        Assert.assertTrue(WallUtils.isValidateMySql(UNION_SQL1, config));
+        Assert.assertTrue(WallUtils.isValidateMySql(UNION_SQL2, config));
+
         config.setSelectUnionCheck(true);
-        Assert.assertTrue(WallUtils.isValidateMySql("select f1, f2 from t where f1=1 union select 1, 2", config));
-        Assert.assertFalse(WallUtils.isValidateMySql("select f1, f2 from t where f1=1 union select 1, 2 --", config));
+        config.setCommentAllow(false);
+        Assert.assertFalse(WallUtils.isValidateMySql(UNION_SQL1, config));
+        Assert.assertFalse(WallUtils.isValidateMySql(UNION_SQL2, config));
     }
 
     public void testOracle() throws Exception {
         WallConfig config = new WallConfig();
+        config.setSelectUnionCheck(false);
+        config.setCommentAllow(true);
+        Assert.assertTrue(WallUtils.isValidateOracle(UNION_SQL1, config));
+        Assert.assertTrue(WallUtils.isValidateOracle(UNION_SQL2, config));
+
         config.setSelectUnionCheck(true);
-        Assert.assertTrue(WallUtils.isValidateOracle("select f1, f2 from t where f1=1 union select 1, 2", config));
-        Assert.assertFalse(WallUtils.isValidateOracle("select f1, f2 from t where f1=1 union select 1, 2 --", config));
+        config.setCommentAllow(false);
+        Assert.assertFalse(WallUtils.isValidateOracle(UNION_SQL1, config));
+        Assert.assertFalse(WallUtils.isValidateOracle(UNION_SQL2, config));
     }
 }

@@ -53,6 +53,10 @@ public interface WallConfigMBean {
 
     void setSelectUnionCheck(boolean selectUnionCheck);
 
+    boolean isSelectWhereSubQueryCheck();
+
+    void setSelectWhereSubQueryCheck(boolean selectWhereSubQueryCheck);
+
     boolean isSelectWhereAlwayTrueCheck();
 
     void setSelectWhereAlwayTrueCheck(boolean selectWhereAlwayTrueCheck);

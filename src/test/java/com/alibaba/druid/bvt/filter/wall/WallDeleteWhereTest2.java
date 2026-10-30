@@ -26,18 +26,20 @@ import com.alibaba.druid.wall.WallUtils;
  * @author wenshao
  */
 public class WallDeleteWhereTest2 extends TestCase {
-
     private String sql = "DELETE FROM T WHERE id = 0 or 1 = 1 --";
     private String sql1 = "DELETE FROM T WHERE id = 0 or 1 = 1 #and c=1";
 
     public void test_check_true() throws Exception {
         WallConfig config = new WallConfig();
         config.setDeleteWhereAlwayTrueCheck(true);
-        config.setConditionAndAlwayTrueAllow(true);
         config.setCommentAllow(true);
 
         Assert.assertFalse(WallUtils.isValidateMySql(sql, config));
         Assert.assertFalse(WallUtils.isValidateMySql(sql1, config));
+
+        config.setDeleteWhereAlwayTrueCheck(false);
+        Assert.assertTrue(WallUtils.isValidateMySql(sql, config));
+        Assert.assertTrue(WallUtils.isValidateMySql(sql1, config));
     }
 
     public void test_check_false() throws Exception {

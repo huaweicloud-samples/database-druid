@@ -22,7 +22,7 @@ import java.util.Collections;
  */
 public class GaussDBIntegrationTest extends TestCase {
 
-    private static final String URL = "jdbc:gaussdb://localhost:5432/n8n_test";
+    private static final String URL = "jdbc:gaussdb://localhost:5432/druid_fvt_test";
     private static final String USER = "appuser";
     private static final String PASSWORD = "App@User456";
 

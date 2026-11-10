@@ -26,10 +26,16 @@ public class GaussDBWallInjectionTest extends TestCase {
                 "SELECT id FROM t_users UNION SELECT password FROM t_passwords"));
     }
 
-    // UNION ALL 同样拦截(决策项: union 注入旁路不保留)
-    public void test_union_all_select() throws Exception {
-        Assert.assertFalse(WallUtils.isValidateGaussDB(
+    // UNION ALL 放行(huaweicloud-samples/database-druid#2): 标准 SQL 且为 WITH RECURSIVE 必需语法
+    public void test_union_all_select_valid() throws Exception {
+        Assert.assertTrue(WallUtils.isValidateGaussDB(
                 "SELECT id FROM t_users UNION ALL SELECT password FROM t_passwords"));
+    }
+
+    // WITH RECURSIVE 递归 CTE(#2 场景锚点)
+    public void test_with_recursive_union_all_valid() throws Exception {
+        Assert.assertTrue(WallUtils.isValidateGaussDB(
+                "WITH RECURSIVE r AS (SELECT 1 AS n UNION ALL SELECT n+1 FROM r WHERE n < 5) SELECT * FROM r"));
     }
 
     // 3.2#3 information_schema 子查询(deny-schema + 子查询内 schema 检查)

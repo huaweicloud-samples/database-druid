@@ -2337,11 +2337,12 @@ public class WallVisitorUtils {
     }
 
     public static boolean checkUnion(WallVisitor visitor, SQLUnionQuery x) {
-        // gaussdb: UNION/UNION ALL 视为 union 注入特征(selectUnionCheck 开关控制, 默认开启)
+        // gaussdb: UNION 视为 union 注入特征(selectUnionCheck 开关控制, 默认开启)。
+        // UNION ALL 放行: 标准 SQL, 且为 WITH RECURSIVE 递归 CTE 必需语法(huaweicloud-samples/database-druid#2)。
+        // 如需同时拦截 UNION ALL, 可通过自定义 Filter 扩展。
         if (visitor.getDbType() == DbType.gaussdb
                 && visitor.getConfig().isSelectUnionCheck()
-                && (x.getOperator() == SQLUnionOperator.UNION
-                    || x.getOperator() == SQLUnionOperator.UNION_ALL)) {
+                && x.getOperator() == SQLUnionOperator.UNION) {
             addViolation(visitor, ErrorCode.UNION, x.getOperator().toString() + " query not allow", x);
             return true;
         }

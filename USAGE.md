@@ -105,7 +105,7 @@ wallFilter.setThrowException(false);   // 不拦截，观察期
 |---|---|---|
 | `setSelectWhereAlwayTrueCheck(true)` | true | WHERE 恒真条件拦截（`WHERE 1=1`）；gaussdb 下恒假（`WHERE 1=2`）同样拦截 |
 | `setSelectWhereSubQueryCheck(false)` | gaussdb 默认开 | WHERE 子查询拦截（`WHERE id IN (SELECT ...)`，含 EXISTS/ANY/ALL/SOME）；仅 GaussDBWallProvider 无参构造默认开启，其他方言默认关闭 |
-| `setSelectUnionCheck(true)` | true | UNION 拦截；gaussdb 下 UNION / UNION ALL 均拦截（其他方言仅拦无 FROM 的右侧分支） |
+| `setSelectUnionCheck(true)` | true | UNION 拦截；gaussdb 下拦截 `UNION`，`UNION ALL` 放行（递归 CTE 必需语法，#2；如需拦截可自定义 Filter） |
 | `setDeleteAllow(false)` | true | 禁 DELETE |
 | `setTruncateAllow(false)` | true | 禁 TRUNCATE |
 | `setMultiStatementAllow(false)` | false | 禁多语句 |
